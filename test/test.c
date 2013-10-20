@@ -108,6 +108,12 @@ int ThreadYield(void * aArg)
   return 0;
 }
 
+/* Once function */
+void OnceFunc(void)
+{
+  gCount++;
+}
+
 
 /* This is the main program (i.e. the main thread) */
 int main(void)
@@ -280,6 +286,24 @@ int main(void)
     printf(" Time = %ld.%09ld\n", (long)ts.tv_sec, ts.tv_nsec);
     clock_gettime(TIME_UTC, &ts);
     printf(" Time = %ld.%09ld\n", (long)ts.tv_sec, ts.tv_nsec);
+  }
+
+  /* Test 8: Once */
+  printf("PART VIII: Once, three times\n");
+  {
+    static once_flag flag = ONCE_FLAG_INIT;
+    int i;
+
+    /* Clear the global counter. */
+    gCount = 0;
+
+    for (i = 0; i < 3; i++)
+    {
+      call_once(&flag, OnceFunc);
+    }
+
+    /* Check the global count */
+    printf(" gCount = %d (should be 1)\n", gCount);
   }
 
   /* FIXME: Implement some more tests for the TinyCThread API... */

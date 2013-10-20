@@ -439,6 +439,24 @@ void *tss_get(tss_t key);
 */
 int tss_set(tss_t key, void *val);
 
+#if defined(_TTHREAD_WIN32_)
+  #define once_flag INIT_ONCE
+  #define ONCE_FLAG_INIT INIT_ONCE_STATIC_INIT
+#else
+  #define once_flag pthread_once_t
+  #define ONCE_FLAG_INIT PTHREAD_ONCE_INIT
+#endif
+
+/** Invoke a callback exactly once
+ * @param flag Flag used to ensure the callback is invoked exactly
+ *        once.
+ * @param func Callback to invoke.
+ */
+#if defined(_TTHREAD_WIN32_)
+  void call_once(once_flag *flag, void (*func)(void));
+#else
+  #define call_once(flag,func) pthread_once(flag,func)
+#endif
 
 #ifdef __cplusplus
 }

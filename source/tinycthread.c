@@ -591,6 +591,19 @@ int _tthread_clock_gettime(clockid_t clk_id, struct timespec *ts)
 }
 #endif // _TTHREAD_EMULATE_CLOCK_GETTIME_
 
+#if defined(_TTHREAD_WIN32_)
+static BOOL CALLBACK _call_once_win32_wrapper(PINIT_ONCE InitOnce, PVOID Parameter, PVOID *Context);
+
+static BOOL CALLBACK _call_once_win32_wrapper(PINIT_ONCE InitOnce, PVOID Parameter, PVOID *Context) {
+  ((void (*)(void)) Parameter) ();
+  return TRUE;
+}
+
+void call_once(once_flag *flag, void (*func)(void)) {
+  PVOID Context = NULL;
+  InitOnceExecuteOnce(flag, _call_once_win32_wrapper, func, &Context);
+}
+#endif
 
 #ifdef __cplusplus
 }
