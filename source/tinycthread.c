@@ -592,18 +592,52 @@ int _tthread_clock_gettime(clockid_t clk_id, struct timespec *ts)
 #endif // _TTHREAD_EMULATE_CLOCK_GETTIME_
 
 #if defined(_TTHREAD_WIN32_)
+#if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0602)
 static BOOL CALLBACK _call_once_win32_wrapper(PINIT_ONCE InitOnce, PVOID Parameter, PVOID *Context);
 
-static BOOL CALLBACK _call_once_win32_wrapper(PINIT_ONCE InitOnce, PVOID Parameter, PVOID *Context) {
+static BOOL CALLBACK _call_once_win32_wrapper(PINIT_ONCE InitOnce, PVOID Parameter, PVOID *Context)
+{
   ((void (*)(void)) Parameter) ();
   return TRUE;
 }
 
-void call_once(once_flag *flag, void (*func)(void)) {
+void call_once(once_flag *flag, void (*func)(void))
+{
   PVOID Context = NULL;
   InitOnceExecuteOnce(flag, _call_once_win32_wrapper, func, &Context);
 }
-#endif
+#else
+void call_once(once_flag *flag, void (*func)(void))
+{
+  /* The idea here is that we use a spin lock (via the
+     InterlockedCompareExchange function) to restrict access to the
+     critical section until we have initialized it, then we use the
+     critical section to block until the callback has completed
+     execution. */
+  while (flag->status < 3) {
+    switch (flag->status) {
+      case 0:
+        if (InterlockedCompareExchange (&(flag->status), 1, 0) == 0) {
+          InitializeCriticalSection(&(flag->lock));
+          EnterCriticalSection(&(flag->lock));
+          flag->status = 2;
+          func ();
+          flag->status = 3;
+          LeaveCriticalSection(&(flag->lock));
+          return;
+        }
+        break;
+      case 1:
+        break;
+      case 2:
+        EnterCriticalSection(&(flag->lock));
+        LeaveCriticalSection(&(flag->lock));
+        break;
+    }
+  }
+}
+#endif /* defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0602) */
+#endif /* defined(_TTHREAD_WIN32_) */
 
 #ifdef __cplusplus
 }

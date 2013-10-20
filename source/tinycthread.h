@@ -440,8 +440,16 @@ void *tss_get(tss_t key);
 int tss_set(tss_t key, void *val);
 
 #if defined(_TTHREAD_WIN32_)
-  #define once_flag INIT_ONCE
-  #define ONCE_FLAG_INIT INIT_ONCE_STATIC_INIT
+  #if  _WIN32_WINNT >= 0x0602
+    #define once_flag INIT_ONCE
+    #define ONCE_FLAG_INIT INIT_ONCE_STATIC_INIT
+  #else
+    typedef struct {
+      LONG volatile status;
+      CRITICAL_SECTION lock;
+    } once_flag;
+  #define ONCE_FLAG_INIT {0,}
+  #endif
 #else
   #define once_flag pthread_once_t
   #define ONCE_FLAG_INIT PTHREAD_ONCE_INIT
