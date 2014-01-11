@@ -108,6 +108,9 @@ freely, subject to the following restrictions:
 #define _TTHREAD_EMULATE_CLOCK_GETTIME_
 
 #if defined(_TTHREAD_WIN32_)
+/* Emulate CLOCK_REALTIME */
+#define CLOCK_REALTIME 0
+
 /* Emulate struct timespec */
 struct _ttherad_timespec {
   time_t tv_sec;
